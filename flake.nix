@@ -33,7 +33,7 @@
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
         buildDependencies = with pkgs; [
-            llvmPackages.libclang
+            libclang.lib
             clang
             pkg-config
             rustPlatform.bindgenHook]
@@ -56,6 +56,9 @@
               pname = cargo-toml.package.name;
               version = cargo-toml.package.version;
               
+              env = { LIBCLANG_PATH = "${libclang.lib}/lib"; }
+              // (lib.optionalAttrs (stdenv.cc.isClang && stdenv.isDarwin) { NIX_LDFLAGS = "-l${stdenv.cc.libcxx.cxxabi.libName}"; });
+
               src = ./.;
               cargoLock = {
                 lockFile = ./Cargo.lock;
@@ -64,8 +67,6 @@
               nativeBuildInputs = buildDependencies;
               buildInputs = runtimeDependencies;
 
-              env.LIBCLANG_PATH = "${llvmPackages.libclang.lib}/lib";
-
               doCheck = false;
             };
 
@@ -73,9 +74,10 @@
           };
 
           devShells.default = mkShell {
+            NIX_LDFLAGS="-l${stdenv.cc.libcxx.cxxabi.libName}";
             buildInputs = developmentDependencies;
             shellHook = ''
-              export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
+              export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
             '';
           };
         }
